@@ -13,8 +13,8 @@ class BertForTokenClassification(BertPreTrainedModel):
         self.bert = BertModel(config)
         self.dropout = nn.Dropout(config.hidden_dropout_prob)
         self.classifier = nn.Linear(config.hidden_size, num_labels)
-        self.apply(self.init_bert_weights)
         self.loss_fct = nn.CrossEntropyLoss()
+        self.apply(self.init_bert_weights)
 
     def forward(self, input_ids, token_type_ids=None, attention_mask=None):
         sequence_output, _ = self.bert(input_ids, token_type_ids, attention_mask, output_all_encoded_layers=False)
@@ -46,6 +46,42 @@ class BertForTokenClassification(BertPreTrainedModel):
             _, pred = torch.max(logits, 1)
             correct = (pred == labels).sum().item()
 
+
+        return loss, total, correct
+
+# rdoc is not typical sentence classification, since we need to consider the category
+# self-attention -> concatenate category -> softmax
+class BertForSequenceClassification_rdoc(BertPreTrainedModel):
+
+    def __init__(self, config, num_labels, num_category):
+        super(BertForSequenceClassification_rdoc, self).__init__(config)
+        self.num_labels = num_labels
+        self.bert = BertModel(config)
+        self.dropout = nn.Dropout(config.hidden_dropout_prob)
+
+        self.category_emb = nn.Embedding(num_category, config.hidden_size)
+
+        self.classifier = nn.Linear(config.hidden_size + config.hidden_size, num_labels)
+        self.loss_fct = nn.CrossEntropyLoss()
+        self.apply(self.init_bert_weights)
+
+
+
+    def forward(self, categories, input_ids, token_type_ids=None, attention_mask=None):
+        _, pooled_output = self.bert(input_ids, token_type_ids, attention_mask, output_all_encoded_layers=False)
+        category_reps = self.category_emb(categories)
+        pooled_output = torch.cat((pooled_output, category_reps), dim=-1)
+        pooled_output = self.dropout(pooled_output)
+        logits = self.classifier(pooled_output)
+
+        return logits
+
+    def loss(self, logits, labels):
+        loss = self.loss_fct(logits, labels)
+
+        total = labels.size(0)
+        _, pred = torch.max(logits, 1)
+        correct = (pred == labels).sum().item()
 
         return loss, total, correct
 

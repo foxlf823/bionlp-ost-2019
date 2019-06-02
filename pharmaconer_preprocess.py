@@ -5,7 +5,7 @@ import nltk
 nlp_tool = nltk.data.load('tokenizers/punkt/spanish.pickle')
 from pytorch_pretrained_bert import BertTokenizer
 from options import opt
-wp_tokenizer = BertTokenizer.from_pretrained(opt.bert_dir)
+wp_tokenizer = BertTokenizer.from_pretrained(opt.bert_dir, do_lower_case=opt.do_lower_case)
 from my_utils import my_tokenize, pad_sequence
 import logging
 from torch.utils.data import DataLoader
@@ -66,7 +66,7 @@ class Entity:
 
 
 
-def load_data(data_dir, bert_dir):
+def load_data(data_dir):
 
     doc_num = 0
     sent_num = 0

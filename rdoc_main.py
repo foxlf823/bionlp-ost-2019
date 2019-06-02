@@ -1,17 +1,16 @@
-
-
+from options import opt
 import logging
 import random
 import numpy as np
 import torch
-from pharmaconer_preprocess import load_data, build_alphabet, prepare_instance, my_collate, evaluate
-from my_utils import Alphabet, MyDataset, makedir_and_clear, save, load
-from options import opt
-from models import BertForTokenClassification
+from my_utils import makedir_and_clear, Alphabet, MyDataset, save, load
+from rdoc_preprocess import load_data, build_alphabet, prepare_instance, my_collate, evaluate
+from models import BertForSequenceClassification_rdoc
 import torch.optim as optim
 from torch.utils.data import DataLoader
 import time
 import os
+
 
 if __name__ == "__main__":
 
@@ -33,14 +32,14 @@ if __name__ == "__main__":
 
         makedir_and_clear(opt.save)
 
-        train_documents = load_data(opt.train)
-        test_documents = load_data(opt.test)
+        train_documents, alphabet_category = load_data(opt.train)
+        test_documents, _ = load_data(opt.test)
 
         alphabet_label = Alphabet('label', True)
         build_alphabet(train_documents, alphabet_label)
         logging.info("label: {}".format(alphabet_label.instances))
 
-        train_instances = prepare_instance(train_documents, alphabet_label)
+        train_instances = prepare_instance(train_documents, alphabet_label, alphabet_category)
         logging.info("train instance number: {}".format(len(train_instances)))
 
         if opt.gpu >= 0 and torch.cuda.is_available():
@@ -49,7 +48,8 @@ if __name__ == "__main__":
             device = torch.device("cpu")
         logging.info("use device {}".format(device))
 
-        model = BertForTokenClassification.from_pretrained(opt.bert_dir, num_labels=alphabet_label.size())
+        model = BertForSequenceClassification_rdoc.from_pretrained(opt.bert_dir, num_labels=alphabet_label.size(),
+                                                                   num_category=alphabet_category.size())
         model.to(device)
 
         optimizer = optim.Adam(model.parameters(), lr=opt.lr, weight_decay=opt.l2)
@@ -72,11 +72,11 @@ if __name__ == "__main__":
             correct, total = 0, 0
 
             for i in range(num_iter):
-                tokens, labels, mask, sent_type = next(train_iter)
+                tokens, labels, mask, sent_type, cate = next(train_iter)
 
-                logits = model.forward(tokens, sent_type, mask)
+                logits = model.forward(cate, tokens, sent_type, mask)
 
-                loss, total_this_batch, correct_this_batch = model.loss(logits, mask, labels)
+                loss, total_this_batch, correct_this_batch = model.loss(logits, labels)
 
                 sum_loss += loss.item()
 
@@ -92,8 +92,7 @@ if __name__ == "__main__":
             logging.info("epoch: %s training finished. Time: %.2fs. loss: %.4f Accuracy %.2f" % (
                 idx, epoch_finish - epoch_start, sum_loss / num_iter, accuracy))
 
-
-            precision, recall, f_measure = evaluate(test_documents, model, alphabet_label, None)
+            precision, recall, f_measure = evaluate(test_documents, model, alphabet_label, alphabet_category, None)
             logging.info("Test p=%.4f, r=%.4f, f1=%.4f" % (precision, recall, f_measure))
             if f_measure > best_test:
                 logging.info("Exceed previous best performance on test: %.4f" % (f_measure))
@@ -110,17 +109,21 @@ if __name__ == "__main__":
 
         # save some information
         save(alphabet_label, os.path.join(opt.save, 'alphabet_label.pkl'))
+        save(alphabet_category, os.path.join(opt.save, 'alphabet_category.pkl'))
 
     elif opt.whattodo == 'test':
 
         makedir_and_clear(opt.predict)
 
-        test_documents = load_data(opt.test, opt.bert_dir)
+        test_documents, _ = load_data(opt.test)
 
         alphabet_label = Alphabet('label', True)
         load(alphabet_label, os.path.join(opt.save, 'alphabet_label.pkl'))
+        alphabet_category = Alphabet('category', True)
+        load(alphabet_category, os.path.join(opt.save, 'alphabet_category.pkl'))
 
-        model = BertForTokenClassification.from_pretrained(opt.bert_dir, num_labels=alphabet_label.size())
+        model = BertForSequenceClassification_rdoc.from_pretrained(opt.bert_dir, num_labels=alphabet_label.size(),
+                                                                   num_category=alphabet_category.size())
         if opt.gpu >= 0 and torch.cuda.is_available():
             model.load_state_dict(
                 torch.load(os.path.join(opt.save, 'model.pth'), map_location='cuda:{}'.format(opt.gpu)))
@@ -128,7 +131,7 @@ if __name__ == "__main__":
             model.load_state_dict(torch.load(os.path.join(opt.save, 'model.pth'), map_location='cpu'))
 
         logging.info("start test ...")
-        evaluate(test_documents, model, alphabet_label, opt.predict)
+        evaluate(test_documents, model, alphabet_label, alphabet_category, opt.predict)
 
 
     logging.info("end ......")
