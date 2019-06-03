@@ -115,7 +115,7 @@ if __name__ == "__main__":
 
         makedir_and_clear(opt.predict)
 
-        test_documents = load_data(opt.test, opt.bert_dir)
+        test_documents = load_data(opt.test)
 
         alphabet_label = Alphabet('label', True)
         load(alphabet_label, os.path.join(opt.save, 'alphabet_label.pkl'))

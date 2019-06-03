@@ -129,8 +129,9 @@ def load_data(data_dir):
                     token['start'] = sentence.start + offset
                     token['end'] = sentence.start + offset + len(token_txt)
                     token['wp'] = wp_tokenizer.tokenize(token_txt)
-                    if len(document.entities) != 0:
-                        token['label'] = getLabel_BIO(token['start'], token['end'], document.entities)
+                    # if len(document.entities) != 0:
+                    #     token['label'] = getLabel_BIO(token['start'], token['end'], document.entities)
+                    token['label'] = getLabel_BIO(token['start'], token['end'], document.entities)
 
                     sentence.tokens.append(token)
                     offset += len(token_txt)

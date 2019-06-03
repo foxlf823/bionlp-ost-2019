@@ -32,8 +32,14 @@ if __name__ == "__main__":
 
         makedir_and_clear(opt.save)
 
-        train_documents, alphabet_category = load_data(opt.train)
-        test_documents, _ = load_data(opt.test)
+        documents, alphabet_category = load_data(opt.train)
+        # no test set, random split 20%
+        train_size = int(len(documents)*0.8)
+        random.shuffle(documents)
+        train_documents = documents[:train_size]
+        test_documents = documents[train_size:]
+        logging.info("{} documents in train set".format(len(train_documents)))
+        logging.info("{} documents in test set".format(len(test_documents)))
 
         alphabet_label = Alphabet('label', True)
         build_alphabet(train_documents, alphabet_label)
