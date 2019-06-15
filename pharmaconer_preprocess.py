@@ -90,6 +90,8 @@ def load_data(data_dir):
                         line = line.strip()
                         if line == '':
                             continue
+                        if line[0] == '#': # ignored annotations for task 2
+                            continue
                         entity = {}
                         columns = line.split('\t')
                         entity['id'] = columns[0]

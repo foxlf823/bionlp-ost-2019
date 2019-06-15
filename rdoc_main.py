@@ -4,7 +4,7 @@ import random
 import numpy as np
 import torch
 from my_utils import makedir_and_clear, Alphabet, MyDataset, save, load
-from rdoc_preprocess import load_data, build_alphabet, prepare_instance, my_collate, evaluate
+from rdoc_preprocess import load_data, build_alphabet, prepare_instance, my_collate, evaluate, translate_xlsx_to_txt
 from models import BertForSequenceClassification_rdoc
 import torch.optim as optim
 from torch.utils.data import DataLoader
@@ -121,7 +121,7 @@ if __name__ == "__main__":
 
         makedir_and_clear(opt.predict)
 
-        test_documents, _ = load_data(opt.test)
+        test_documents, _ = load_data(opt.test, 'test')
 
         alphabet_label = Alphabet('label', True)
         load(alphabet_label, os.path.join(opt.save, 'alphabet_label.pkl'))
@@ -139,5 +139,15 @@ if __name__ == "__main__":
         logging.info("start test ...")
         evaluate(test_documents, model, alphabet_label, alphabet_category, opt.predict)
 
+    elif opt.whattodo == 'submit':
+
+        predict_documents, _ = load_data(opt.predict)
+
+        translate_xlsx_to_txt(predict_documents, 'rdoc_submission.txt')
+
+
+
+
 
     logging.info("end ......")
+

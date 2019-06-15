@@ -1,7 +1,7 @@
 import argparse
 
 parser = argparse.ArgumentParser()
-parser.add_argument('-whattodo', type=str, default="train", choices=["train","test"])
+parser.add_argument('-whattodo', type=str, default="train", choices=["train","test", 'submit'])
 parser.add_argument('-train', type=str)
 parser.add_argument('-test', type=str)
 parser.add_argument('-verbose', action='store_true', default=False)

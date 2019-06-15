@@ -29,7 +29,7 @@ class Sentence:
         self.text = ''
         self.label = ''
 
-def load_data(data_dir):
+def load_data(data_dir, mode='train'):
 
     doc_num = 0
     sent_num = 0
@@ -57,7 +57,8 @@ def load_data(data_dir):
             document.pmid = row[0].value
             document.title = row[1].value
             document.abstract = row[2].value
-            document.relevant_sentences = parseReleventFromExcel(row[3].value)
+            if mode == 'train':
+                document.relevant_sentences = parseReleventFromExcel(row[3].value)
             document.category = input_file_name
 
             all_sents_inds = []
@@ -77,6 +78,8 @@ def load_data(data_dir):
                         sentence.label = 'yes'
                     else:
                         sentence.label = 'no'
+                else:
+                    sentence.label = 'no'
 
                 for token_txt in my_tokenize(sentence.text):
                     token = {}
@@ -162,7 +165,7 @@ def prepare_instance_for_one_doc(document, alphabet_label, alphabet_category):
 
         if len(tokens) > opt.len_max_seq-2: # for [CLS] and [SEP]
             tokens = tokens[:opt.len_max_seq-2]
-            labels = labels[:opt.len_max_seq-2]
+            # labels = labels[:opt.len_max_seq-2]
 
         tokens.insert(0, '[CLS]')
         tokens.append('[SEP]')
@@ -329,16 +332,33 @@ def dump_results(documents, all_pred_labels, dump_dir):
             ws1.cell(row=row_idx, column=3, value=document.abstract)
 
             str_relevant = '{'
+            all_no = True
             for sent_idx, sentence in enumerate(document.sentences):
                 if pred_label[sent_idx] == 'yes':
                     str_relevant += "'"+sentence.text+"', "
+                    all_no = False
 
-            str_relevant = str_relevant[:-2] # remove the last , and whitespace
+            if all_no == False:
+                str_relevant = str_relevant[:-2] # remove the last , and whitespace
             str_relevant += '}'
             ws1.cell(row=row_idx, column=4, value=str_relevant)
 
             row_idx += 1
 
         wb.save(os.path.join(dump_dir, category))
+
+
+def translate_xlsx_to_txt(documents, path):
+    category = ""
+    with codecs.open(path, 'w', 'UTF-8') as fp:
+        for document in documents:
+            if category != document.category:
+                fp.write(document.category[:document.category.find('.xlsx')]+"\n")
+                category = document.category
+
+            for sentence in document.relevant_sentences:
+                fp.write(str(document.pmid)+"\t"+sentence+"\n")
+
+
 
 
