@@ -121,11 +121,18 @@ if __name__ == "__main__":
         load(alphabet_label, os.path.join(opt.save, 'alphabet_label.pkl'))
 
         model = BertForTokenClassification.from_pretrained(opt.bert_dir, num_labels=alphabet_label.size())
+        model.load_state_dict(torch.load(os.path.join(opt.save, 'model.pth')))
+
         if opt.gpu >= 0 and torch.cuda.is_available():
-            model.load_state_dict(
-                torch.load(os.path.join(opt.save, 'model.pth'), map_location='cuda:{}'.format(opt.gpu)))
-        else:
-            model.load_state_dict(torch.load(os.path.join(opt.save, 'model.pth'), map_location='cpu'))
+            device = torch.device("cuda", opt.gpu)
+            model.to(device)
+
+        # if opt.gpu >= 0 and torch.cuda.is_available():
+        #     model.load_state_dict(
+        #         torch.load(os.path.join(opt.save, 'model.pth'), map_location='cuda:{}'.format(opt.gpu)))
+        # else:
+        #     model.load_state_dict(torch.load(os.path.join(opt.save, 'model.pth'), map_location='cpu'))
+
 
         logging.info("start test ...")
         evaluate(test_documents, model, alphabet_label, opt.predict)

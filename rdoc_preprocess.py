@@ -81,6 +81,9 @@ def load_data(data_dir, mode='train'):
                 else:
                     sentence.label = 'no'
 
+                # replace due to nltk transfer " to other character, see https://github.com/nltk/nltk/issues/1630
+                sentence.text = sentence.text.replace('"', " ")
+                sentence.text = sentence.text.replace('\'', " ")
                 for token_txt in my_tokenize(sentence.text):
                     token = {}
                     offset = sentence.text.find(token_txt, offset)
@@ -91,6 +94,8 @@ def load_data(data_dir, mode='train'):
                     token['start'] = sentence.start + offset
                     token['end'] = sentence.start + offset + len(token_txt)
                     token['wp'] = wp_tokenizer.tokenize(token_txt)
+                    if len(token['wp']) == 0: # for some oov tokens (e.g., \x99), wp_tokenizer return a empty list
+                        token['wp'] = ['[UNK]']
 
                     sentence.tokens.append(token)
                     offset += len(token_txt)

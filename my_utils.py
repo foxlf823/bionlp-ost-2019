@@ -17,7 +17,7 @@ def my_split(s):
     return text
 
 def my_tokenize(txt):
-    tokens1 = nltk.word_tokenize(txt.replace('"', " "))  # replace due to nltk transfer " to other character, see https://github.com/nltk/nltk/issues/1630
+    tokens1 = nltk.word_tokenize(txt)
     tokens2 = []
     for token1 in tokens1:
         token2 = my_split(token1)

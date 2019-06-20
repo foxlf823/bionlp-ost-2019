@@ -121,6 +121,9 @@ def load_data(data_dir):
 
                 offset = 0
                 sentence_txt = document.text[sentence.start:sentence.end]
+                # replace due to nltk transfer " to other character, see https://github.com/nltk/nltk/issues/1630
+                sentence_txt = sentence_txt.replace('"', " ")
+                sentence_txt = sentence_txt.replace('\'', " ")
                 for token_txt in my_tokenize(sentence_txt):
                     token = {}
                     offset = sentence_txt.find(token_txt, offset)
@@ -131,6 +134,8 @@ def load_data(data_dir):
                     token['start'] = sentence.start + offset
                     token['end'] = sentence.start + offset + len(token_txt)
                     token['wp'] = wp_tokenizer.tokenize(token_txt)
+                    if len(token['wp']) == 0: # for some oov tokens (e.g., \x99), wp_tokenizer return a empty list
+                        token['wp'] = ['[UNK]']
                     # if len(document.entities) != 0:
                     #     token['label'] = getLabel_BIO(token['start'], token['end'], document.entities)
                     token['label'] = getLabel_BIO(token['start'], token['end'], document.entities)
@@ -419,9 +424,9 @@ def count_tp(gold_entities, pred_entities):
 
 def dump_results(document, pred_entities, dump_dir):
 
-    with codecs.open(os.path.join(dump_dir, document.name), 'w', 'UTF-8') as fp:
-
-        fp.write(document.text)
+    # with codecs.open(os.path.join(dump_dir, document.name), 'w', 'UTF-8') as fp:
+    #
+    #     fp.write(document.text)
 
     with codecs.open(os.path.join(dump_dir, document.name.replace('.txt', '.ann')), 'w', 'UTF-8') as fp:
 
