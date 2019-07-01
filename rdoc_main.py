@@ -130,6 +130,8 @@ if __name__ == "__main__":
 
         model = BertForSequenceClassification_rdoc.from_pretrained(opt.bert_dir, num_labels=alphabet_label.size(),
                                                                    num_category=alphabet_category.size())
+        model.load_state_dict(torch.load(os.path.join(opt.save, 'model.pth')))
+
         if opt.gpu >= 0 and torch.cuda.is_available():
             device = torch.device("cuda", opt.gpu)
             model.to(device)
